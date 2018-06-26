@@ -4,10 +4,6 @@ import json
 import numpy as np
 from keras.utils import to_categorical
 
-# text = 'Architecturally, the school has a Catholic character. Atop the Main Buildings gold dome is a golden statue of the Virgin Mary. Immediately in front of the Main Building and facing it, is a copper statue of Christ with arms upraised with the legend "Venite Ad Me Omnes". Next to the Main Building is the Basilica of the Sacred Heart. Immediately behind the basilica is the Grotto, a Marian place of prayer and reflection. It is a replica of the grotto at Lourdes, France where the Virgin Mary reputedly appeared to Saint Bernadette Soubirous in 1858. At the end of the main drive (and in a direct line that connects through 3 statues and the Gold Dome), is a simple, modern stone statue of Mary.'
-# result = text_to_word_sequence(text, filters="^'", lower=True, split='!"#$%&()*+,-./:;<=>?@[\]^_`{|}~ ')
-# print(result)
-
 # Load Dataset and preprocess
 # Define train and test files
 TRAIN_DATA_DIR = 'data/train.json'
@@ -102,22 +98,7 @@ def preprocess_data(dataset, glove):
     maxQuestionLen = max(len(l) for l in Xq)
     return np.array(Xc).T, np.array(Xq).T, to_categorical(Ys, num_classes=maxPassageLen), to_categorical(Ye, num_classes=maxPassageLen), mapper, maxPassageLen, maxQuestionLen
 
-train_data, test_data = load_data(TRAIN_DATA_DIR, TEST_DATA_DIR)
-glove = load_glove(GLOVE_DIR)
 
-Xc, Xq, Ys, Ye, mapper, maxPassageLen, maxQuestionLen = preprocess_data(train_data, glove)
-# print(Xc[0])
-print('Len Xc ' + str(len(Xc)))
-# print(Xq[0])
-print('Len Xq ' + str(len(Xq)))
-# print(Ys[0])
-print('Len Ys ' + str(len(Ys)))
-# print(Ye[0])
-print('Len Ye ' + str(len(Ye)))
-# print(mapper[:50])
-print('Len mapper ' + str(len(mapper)))
-print(maxPassageLen, maxQuestionLen)
-# preprocess_data(train_data, glove)
 
 
 
