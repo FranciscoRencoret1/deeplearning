@@ -1,15 +1,7 @@
 from keras.preprocessing.text import text_to_word_sequence
-import os
 import json
 import numpy as np
 from keras.utils import to_categorical
-
-# Load Dataset and preprocess
-# Define train and test files
-TRAIN_DATA_DIR = 'data/train.json'
-TEST_DATA_DIR = 'data/test.json'
-GLOVE_DIR = 'glove/glove.6B.300d.txt'
-FILTER_CHAR = '''!#%&()*+,-./:;<=>?@[\]^_`'{|}~"°£₹¢₥’—‘$'''
 
 def load_data(train_data_dir, test_data_dir):
     with open(train_data_dir) as f:
@@ -31,11 +23,11 @@ def load_glove(glove_dir):
             glove.update({word: glove_vector})
     return glove
 
-def get_glove_repr(text, glove):
+def get_glove_repr(text, glove, filter_char):
     # Create array for glove reprentation of each word of the Text
     text_glove_repr = []
     # First, we clean the context filtering by puntuation marks 
-    clean_text = text_to_word_sequence(text, filters=FILTER_CHAR, lower=True, split=' ')
+    clean_text = text_to_word_sequence(text, filters=filter_char, lower=True, split=' ')
     for word in clean_text:
         # Try finding word in glove dic, create vector of 0s if word is not found in dic
         if word in glove.keys(): word_glove_repr = glove[word]
@@ -43,7 +35,7 @@ def get_glove_repr(text, glove):
         text_glove_repr.append(word_glove_repr)
     return text_glove_repr, clean_text
 
-def preprocess_data(dataset, glove): 
+def preprocess_data(dataset, glove, filter_char): 
     # Create array for Context
     Xc = []
     # Create array for Questions
@@ -61,7 +53,7 @@ def preprocess_data(dataset, glove):
         # Convert Context to glove vectors
         for paragraph in data['paragraphs']:
             # Get glove representation of Context
-            context_glove_repr, clean_context = get_glove_repr(paragraph['context'], glove)
+            context_glove_repr, clean_context = get_glove_repr(paragraph['context'], glove, filter_char)
             # print(clean_context)
             # print(context_glove_repr)
             # Append context to Xc, the array of contexts
@@ -70,16 +62,16 @@ def preprocess_data(dataset, glove):
             #Convert question and answer to glove vectors
             for qa in paragraph['qas']:
                 # Get glove representation of Question
-                question_glove_repr, clean_question = get_glove_repr(qa['question'], glove)
+                question_glove_repr, clean_question = get_glove_repr(qa['question'], glove, filter_char)
 
                 # Work on answer. We must get the answer's end index of the context. We iterate because there
                 # could be several answes for the same question
                 for answer in qa['answers']:
                     # Filter answer
-                    clean_answer = text_to_word_sequence(answer['text'], filters=FILTER_CHAR, lower=True, split=' ')
+                    clean_answer = text_to_word_sequence(answer['text'], filters=filter_char, lower=True, split=' ')
                     start_point_char = answer['answer_start']
                     end_point_char = start_point_char + len(answer['text'])
-                    complete_answer = text_to_word_sequence(paragraph['context'][start_point_char : end_point_char], filters=FILTER_CHAR, lower=True, split=' ')
+                    complete_answer = text_to_word_sequence(paragraph['context'][start_point_char : end_point_char], filters=filter_char, lower=True, split=' ')
 
                     # TEMP Clean some bad data
                     if len(complete_answer) > 0:
@@ -94,9 +86,9 @@ def preprocess_data(dataset, glove):
                                 Xq.append(question_glove_repr)
                                 mapper.append(data['paragraphs'].index(paragraph))
                                 break
-    maxPassageLen = max(len(l) for l in Xc)
+    maxContextLen = max(len(l) for l in Xc)
     maxQuestionLen = max(len(l) for l in Xq)
-    return np.array(Xc).T, np.array(Xq).T, to_categorical(Ys, num_classes=maxPassageLen), to_categorical(Ye, num_classes=maxPassageLen), mapper, maxPassageLen, maxQuestionLen
+    return np.array(Xc).T, np.array(Xq).T, to_categorical(Ys, num_classes=maxContextLen), to_categorical(Ye, num_classes=maxContextLen), mapper, maxContextLen, maxQuestionLen
 
 
 
