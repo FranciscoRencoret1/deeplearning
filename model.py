@@ -7,23 +7,28 @@ from keras.engine.topology import Layer
 from keras import optimizers, initializers
 from keras.engine import InputSpec
 from keras.activations import tanh, softmax
+import tensorflow as tf
 
 class PointerGRU(GRU):
     def __init__(self, hidden_shape, *args, **kwargs):
         self.hidden_shape = hidden_shape
         self.input_length = []
+        print(111)
         super().__init__(*args, **kwargs)
-
+        print(2222)
     def build(self, input_shape):
-        super().build(input_shape)
+        print(3333)
+        super().build(input_shape[0])
+        print("INPUT SHAPE {}".format(input_shape))
         self.input_spec = [InputSpec(shape=input_shape)]
         initialization_seed = initializers.get('orthogonal')
-        self.W1 = initialization_seed((self.hidden_shape, 1))
-        self.W2 = initialization_seed((self.hidden_shape, 1))
+        self.W1 = initialization_seed((256, 1))
+        self.W2 = initialization_seed((256, 1))
         self.vt = initialization_seed((input_shape[1], 1))
         self.trainable_weights += [self.W1, self.W2, self.vt]
 
     def call(self, x, mask=None):
+        print(44444)
         input_shape = self.input_spec[0].shape
         en_seq = x
         x_input = x[:, input_shape[1]-1, :]
@@ -42,8 +47,6 @@ class PointerGRU(GRU):
         return outputs
 
     def step(self, x_input, states):
-        #print "x_input:", x_input, x_input.shape
-        # <TensorType(float32, matrix)>
         
         input_shape = self.input_spec[0].shape
         en_seq = states[-1]
@@ -64,6 +67,38 @@ class PointerGRU(GRU):
         # output shape is not affected by the attention component
         return (input_shape[0], input_shape[1], input_shape[1])
 
+class QuestionPooling(Layer):
+
+    def __init__(self, hidden_shape, **kwargs):
+        super(QuestionPooling, self).__init__(**kwargs)
+        self.hidden_shape = hidden_shape
+
+    def build(self, input_shape):
+        initialization_seed = initializers.get('orthogonal')
+        self.Wu = tf.convert_to_tensor(initialization_seed((self.hidden_shape, self.hidden_shape//2)), dtype=tf.float32)
+        self.Wv = tf.convert_to_tensor(initialization_seed((self.hidden_shape, self.hidden_shape//2)), dtype=tf.float32)
+        self.Vr = tf.convert_to_tensor(initialization_seed((self.hidden_shape//2, self.hidden_shape//2)), dtype=tf.float32)
+        self.vt = tf.convert_to_tensor(initialization_seed((self.hidden_shape//2, 1)), dtype=tf.float32)
+        self.trainable_weights += [self.Wu, self.Wv, self.Vr, self.vt]
+
+    def call(self, inputs, mask=None):
+        uQ = inputs
+        ones = K.ones_like(K.sum(uQ, axis=1, keepdims=True))
+
+
+
+
+        s_hat = K.dot(uQ, self.Wu)
+        s_hat += K.dot(ones, K.dot(self.Wv, self.Vr))
+        s_hat = K.tanh(s_hat)
+        s = K.dot(s_hat, self.vt)
+        s = K.batch_flatten(s)
+
+        a = softmax(s, axis=1)
+
+        rQ = K.batch_dot(uQ, a, axes=[1, 1])
+
+        return rQ
 
 
 
@@ -95,16 +130,26 @@ def generate_model(maxContextLen, maxQuestionLen):
     softmaxMatrix = Activation('softmax', name='SoftmaxMatrix')(similarityMatrix)
     contextToQuery = Lambda(lambda x: K.batch_dot(x[0], x[1], axes=[2,1]), name='ContextToQuery')([softmaxMatrix, dropoutQuestion2])
     attentionConcatContext = Concatenate(axis=2)([dropoutContext2, contextToQuery])
-    attentionContextCoeficients = Dense(maxQuestionLen, activation='sigmoid', name='Atention')(attentionConcatContext)
+    attentionContextCoeficients = Dense(256, activation='sigmoid', name='Atention')(attentionConcatContext)
     
-    # hp = Lambda(lambda x: K.batch_dot(x[0], x[1], axes=[]))(dropoutContext2, attentionContextCoeficients)
+    # permuteDims = Permute((2, 1), input_shape=(800, 256))(attentionConcatContext)
+    # attentionContextCoeficients = Dense(maxContextLen, activation='sigmoid', name='Atention')(permuteDims)
+    # embeddingDotAttention = Lambda(lambda x: K.batch_dot(x[0], x[1], axes=[2, 1]), name='ContextDotAttention')([dropoutContext2, attentionContextCoeficients])
 
+
+
+    #QuestionAware passage encoding GRU
+    bidirectionalQAwarePassage = Bidirectional(GRU(units=128, return_sequences=True))(attentionContextCoeficients)
+
+    #QuestionPool
+    rQ = QuestionPooling(256)(dropoutQuestion2)
 
     # Pointer Networks Layer
-    pointerLayer = PointerGRU(128, output_dim=128, initial_state_provided=True, name='PointerLayer')([dropoutContext2, attentionContextCoeficients])
+    print("Dimentions: {}".format(bidirectionalQAwarePassage.get_shape()))
+    pointerLayer = PointerGRU(256, output_dim=maxContextLen, name='PointerLayer', return_sequences=True)([bidirectionalQAwarePassage, rQ])
 
   
-    fc1 = Dense(500, activation='relu', kernel_regularizer = l2(0.025))(attentionConcatContext)
+    fc1 = Dense(500, activation='relu', kernel_regularizer = l2(0.025))(bidirectionalQAwarePassage)
     dropout = Dropout(0.5)(fc1)
     output1 = Dense(maxContextLen, activation='softmax')(dropout)
     output2 = Dense(maxContextLen, activation='softmax')(dropout)
@@ -112,3 +157,8 @@ def generate_model(maxContextLen, maxQuestionLen):
     model = Model(inputs=[inputQuestion,inputContext], outputs=[output1, output2])
     model.compile(optimizer=optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0), loss='categorical_crossentropy', metrics=['accuracy'])
     return model
+
+
+if __name__ == '__main__':
+  model = generate_model(400,100)
+  print(model.summary())
