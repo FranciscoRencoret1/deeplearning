@@ -3,6 +3,7 @@ import preprocess
 import textGen
 import json
 import pickle
+import numpy as np
 from keras.callbacks import History, ModelCheckpoint, EarlyStopping
 import keras.backend as K
 
