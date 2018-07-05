@@ -11,7 +11,7 @@ import numpy as np
 # 	print(i)
 
 
-def generate_data(Xp, Xq, Ys, Ye, mapper, batch_size, maxQuestionLen, maxPassageLen):
+def generate_data(Xp, Xq, Ys, Ye, mapper, maxContextLen, maxQuestionLen, batch_size):
   count = 0
   while True:
     X_mini_batch = [[], []]

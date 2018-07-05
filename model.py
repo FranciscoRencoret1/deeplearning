@@ -1,5 +1,5 @@
 from keras.models import Model
-from keras.layers import Input, Dense, Dropout, Concatenate, Flatten, Lambda, Activation, GRU
+from keras.layers import Input, Dense, Dropout, Concatenate, Flatten, Lambda, Activation, CuDNNGRU
 from keras.layers.wrappers import Bidirectional, TimeDistributed
 from keras.regularizers import l2
 import keras.backend as K
@@ -148,23 +148,23 @@ def generate_model(maxContextLen, maxQuestionLen):
     # Process question input and feed to bidirectional layer
     inputQuestion = Input(shape=(maxQuestionLen,300))
 
-    bidirectionalQuestion1 = Bidirectional(GRU(units=128, return_sequences=True))(inputQuestion)
+    bidirectionalQuestion1 = Bidirectional(CuDNNGRU(units=128, return_sequences=True))(inputQuestion)
     dropoutQuestion1 = Dropout(0.2)(bidirectionalQuestion1)
-    bidirectionalQuestion2 = Bidirectional(GRU(units=128, return_sequences=True),
+    bidirectionalQuestion2 = Bidirectional(CuDNNGRU(units=128, return_sequences=True),
                                        merge_mode = 'concat')(dropoutQuestion1)
     dropoutQuestion2 = Dropout(0.2, name='QuestionRNNOutput')(bidirectionalQuestion2)
 
     # Process context input and feed to bidirectional layer
     inputContext = Input(shape=(maxContextLen,300))
-    bidirectionalContext1 = Bidirectional(GRU(units=128, return_sequences=True))(inputContext)
+    bidirectionalContext1 = Bidirectional(CuDNNGRU(units=128, return_sequences=True))(inputContext)
     dropoutContext1 = Dropout(0.2)(bidirectionalContext1)
-    bidirectionalContext2 = Bidirectional(GRU(units=128, return_sequences=True),
+    bidirectionalContext2 = Bidirectional(CuDNNGRU(units=128, return_sequences=True),
                                        merge_mode = 'concat')(dropoutContext1)
     dropoutContext2 = Dropout(0.2, name='ContextRNNOutput')(bidirectionalContext2)
 
     # Atention Layer
-    similarityMatrix = Lambda(lambda x: K.batch_dot(x[0], x[1], axes=[2,2]), name='ContextDotQuestion')([dropoutContext2, dropoutQuestion2])
-    softmaxMatrix = Activation('softmax', name='SoftmaxMatrix')(similarityMatrix)
+    similarityMatrix = Lambda(lambda x: K.batch_dot(x[0], x[1], axes=[2,2]), name='similarityMatrix')([dropoutContext2, dropoutQuestion2])
+    softmaxMatrix = Activation('softmax', name='SoftmaxSimilarity')(similarityMatrix)
     contextToQuery = Lambda(lambda x: K.batch_dot(x[0], x[1], axes=[2,1]), name='ContextToQuery')([softmaxMatrix, dropoutQuestion2])
     attentionConcatContext = Concatenate(axis=2)([dropoutContext2, contextToQuery])
     attentionContextCoeficients = Dense(256, activation='sigmoid', name='Atention')(attentionConcatContext)
@@ -174,23 +174,28 @@ def generate_model(maxContextLen, maxQuestionLen):
     # embeddingDotAttention = Lambda(lambda x: K.batch_dot(x[0], x[1], axes=[2, 1]), name='ContextDotAttention')([dropoutContext2, attentionContextCoeficients])
 
 
-
     #QuestionAware passage encoding GRU
-    bidirectionalQAwarePassage = Bidirectional(GRU(units=128, return_sequences=True))(attentionContextCoeficients)
+    bidirectionalQAwarePassage = Bidirectional(CuDNNGRU(units=128, return_sequences=True))(attentionContextCoeficients)
 
     #QuestionPool
     rQ = QuestionPooling(256)(dropoutQuestion2)
-    print(rQ)
 
     # Pointer Networks Layer
-    print("Dimentions: {}".format(bidirectionalQAwarePassage.get_shape()))
-    pointerLayer = PointerGRU(maxContextLen, output_dim=256, name='PointerLayer', return_sequences=True)(inputs=[bidirectionalQAwarePassage], initial_state =[rQ])
+    # print("Dimentions: {}".format(bidirectionalQAwarePassage.get_shape()))
+    # pointerLayer = PointerGRU(maxContextLen, output_dim=256, name='PointerLayer', return_sequences=True)(inputs=[bidirectionalQAwarePassage], initial_state =[rQ])
 
-  
-    fc1 = Dense(500, activation='relu', kernel_regularizer = l2(0.025))(bidirectionalQAwarePassage)
+
+    # Flatten
+    flat = Flatten()(bidirectionalQAwarePassage)
+
+    preDense = Concatenate()([flat, rQ])
+    fc1 = Dense(500, activation='relu', kernel_regularizer = l2(0.05))(preDense)
     dropout = Dropout(0.5)(fc1)
-    output1 = Dense(maxContextLen, activation='softmax')(dropout)
-    output2 = Dense(maxContextLen, activation='softmax')(dropout)
+    fc2 = Dense(1000, activation='relu', kernel_regularizer = l2(0.05))(dropout)
+    dropout2 = Dropout(0.5)(fc2)
+    output1 = Dense(maxContextLen, activation='softmax')(dropout2)
+    preOutput2 = Concatenate()([dropout2, output1])
+    output2 = Dense(maxContextLen, activation='softmax')(preOutput2)
 
     model = Model(inputs=[inputQuestion,inputContext], outputs=[output1, output2])
     model.compile(optimizer=optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0), loss='categorical_crossentropy', metrics=['accuracy'])
