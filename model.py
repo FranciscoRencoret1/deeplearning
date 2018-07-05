@@ -181,7 +181,7 @@ def generate_model(maxContextLen, maxQuestionLen):
     bidirectionalQAwarePassage = Bidirectional(CuDNNGRU(units=128, return_sequences=True))(attentionContextCoeficients)
 
     #QuestionPool
-    # rQ = QuestionPooling(256)(dropoutQuestion2)
+    rQ = QuestionPooling(256)(dropoutQuestion2)
 
     # Pointer Networks Layer
     # print("Dimentions: {}".format(bidirectionalQAwarePassage.get_shape()))
@@ -190,9 +190,9 @@ def generate_model(maxContextLen, maxQuestionLen):
 
     # Flatten
     flat = Flatten()(bidirectionalQAwarePassage)
-    flat2 = Flatten()(dropoutQuestion2)
+    # flat2 = Flatten()(dropoutQuestion2)
 
-    preDense = Concatenate()([flat, flat2])
+    preDense = Concatenate()([flat, rQ])
     fc1 = Dense(500, activation='relu', kernel_regularizer = l2(0.05))(preDense)
     dropout = Dropout(0.5)(fc1)
     fc2 = Dense(1000, activation='relu', kernel_regularizer = l2(0.05))(dropout)
