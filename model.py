@@ -17,7 +17,7 @@ class PointerGRU(GRU):
         self.hidden_shape = hidden_shape
         self.input_length = []
         print(111)
-        self.input_spec = [None] * 256 # TODO TODO TODO
+        self.input_spec = [None] * 150 # TODO TODO TODO
         for arg in (args):
           print("arg: {}".format(arg))
         print("pipi{}".format(kwargs))
@@ -38,19 +38,19 @@ class PointerGRU(GRU):
         super().build(input_shape)
         initialization_seed = initializers.get('orthogonal')
         # self.W1 = self.add_weight(name='W1',
-        #                           shape=(BATCH_SIZE, 256, 1),
+        #                           shape=(BATCH_SIZE, 150, 1),
         #                           initializer=initialization_seed,
         #                           trainable=True)
         # self.W2 = self.add_weight(name='W2',
-        #                           shape=(BATCH_SIZE, 256, 1),
+        #                           shape=(BATCH_SIZE, 150, 1),
         #                           initializer=initialization_seed,
         #                           trainable=True)
         # self.vt = self.add_weight(name='vt',
         #                           shape=(BATCH_SIZE, input_shape[0][1], 1),
         #                           initializer=initialization_seed,
         #                           trainable=True)
-        self.W1 = tf.convert_to_tensor(initialization_seed((256, 1)), dtype=tf.float32)
-        self.W2 = tf.convert_to_tensor(initialization_seed((256, 1)), dtype=tf.float32)
+        self.W1 = tf.convert_to_tensor(initialization_seed((150, 1)), dtype=tf.float32)
+        self.W2 = tf.convert_to_tensor(initialization_seed((150, 1)), dtype=tf.float32)
         print('asfadfad{}'.format(input_shape))
         self.vt = tf.convert_to_tensor(initialization_seed((input_shape[1], 1)), dtype=tf.float32)
         self.trainable_weights.append(self.W1)
@@ -151,17 +151,17 @@ def generate_model(maxContextLen, maxQuestionLen):
     # Process question input and feed to bidirectional layer
     inputQuestion = Input(shape=(maxQuestionLen,300))
 
-    bidirectionalQuestion1 = Bidirectional(CuDNNGRU(units=128, return_sequences=True))(inputQuestion)
+    bidirectionalQuestion1 = Bidirectional(CuDNNGRU(units=75, return_sequences=True))(inputQuestion)
     dropoutQuestion1 = Dropout(0.2)(bidirectionalQuestion1)
-    bidirectionalQuestion2 = Bidirectional(CuDNNGRU(units=128, return_sequences=True),
+    bidirectionalQuestion2 = Bidirectional(CuDNNGRU(units=75, return_sequences=True),
                                        merge_mode = 'concat')(dropoutQuestion1)
     dropoutQuestion2 = Dropout(0.2, name='QuestionRNNOutput')(bidirectionalQuestion2)
 
     # Process context input and feed to bidirectional layer
     inputContext = Input(shape=(maxContextLen,300))
-    bidirectionalContext1 = Bidirectional(CuDNNGRU(units=128, return_sequences=True))(inputContext)
+    bidirectionalContext1 = Bidirectional(CuDNNGRU(units=75, return_sequences=True))(inputContext)
     dropoutContext1 = Dropout(0.2)(bidirectionalContext1)
-    bidirectionalContext2 = Bidirectional(CuDNNGRU(units=128, return_sequences=True),
+    bidirectionalContext2 = Bidirectional(CuDNNGRU(units=75, return_sequences=True),
                                        merge_mode = 'concat')(dropoutContext1)
     dropoutContext2 = Dropout(0.2, name='ContextRNNOutput')(bidirectionalContext2)
 
@@ -170,22 +170,22 @@ def generate_model(maxContextLen, maxQuestionLen):
     softmaxMatrix = Activation('softmax', name='SoftmaxSimilarity')(similarityMatrix)
     contextToQuery = Lambda(lambda x: K.batch_dot(x[0], x[1], axes=[2,1]), name='ContextToQuery')([softmaxMatrix, dropoutQuestion2])
     attentionConcatContext = Concatenate(axis=2)([dropoutContext2, contextToQuery])
-    attentionContextCoeficients = Dense(256, activation='sigmoid', name='Atention')(attentionConcatContext)
+    attentionContextCoeficients = Dense(150, activation='sigmoid', name='Atention')(attentionConcatContext)
     
-    # permuteDims = Permute((2, 1), input_shape=(800, 256))(attentionConcatContext)
+    # permuteDims = Permute((2, 1), input_shape=(800, 150))(attentionConcatContext)
     # attentionContextCoeficients = Dense(maxContextLen, activation='sigmoid', name='Atention')(permuteDims)
     # embeddingDotAttention = Lambda(lambda x: K.batch_dot(x[0], x[1], axes=[2, 1]), name='ContextDotAttention')([dropoutContext2, attentionContextCoeficients])
 
 
     #QuestionAware passage encoding GRU
-    bidirectionalQAwarePassage = Bidirectional(CuDNNGRU(units=128, return_sequences=True))(attentionContextCoeficients)
+    bidirectionalQAwarePassage = Bidirectional(CuDNNGRU(units=75, return_sequences=True))(attentionContextCoeficients)
 
     #QuestionPool
-    rQ = QuestionPooling(256)(dropoutQuestion2)
+    rQ = QuestionPooling(150)(dropoutQuestion2)
 
     # Pointer Networks Layer
     # print("Dimentions: {}".format(bidirectionalQAwarePassage.get_shape()))
-    # pointerLayer = PointerGRU(maxContextLen, output_dim=256, name='PointerLayer', return_sequences=True)(inputs=[bidirectionalQAwarePassage], initial_state =[rQ])
+    # pointerLayer = PointerGRU(maxContextLen, output_dim=150, name='PointerLayer', return_sequences=True)(inputs=[bidirectionalQAwarePassage], initial_state =[rQ])
 
 
     # Flatten
