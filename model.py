@@ -111,11 +111,15 @@ class QuestionPooling(Layer):
 
     def build(self, input_shape):
         initialization_seed = initializers.get('orthogonal')
-        self.Wu = tf.convert_to_tensor(initialization_seed((self.hidden_shape, self.hidden_shape//2)), dtype=tf.float32)
-        self.Wv = tf.convert_to_tensor(initialization_seed((self.hidden_shape, self.hidden_shape//2)), dtype=tf.float32)
-        self.Vr = tf.convert_to_tensor(initialization_seed((self.hidden_shape//2, self.hidden_shape//2)), dtype=tf.float32)
-        self.vt = tf.convert_to_tensor(initialization_seed((self.hidden_shape//2, 1)), dtype=tf.float32)
-        self.trainable_weights += [self.Wu, self.Wv, self.Vr, self.vt]
+        self.Wu = K.variable(initialization_seed((self.hidden_shape, self.hidden_shape//2)))
+        self.Wv = K.variable(initialization_seed((self.hidden_shape, self.hidden_shape//2)))
+        self.Vr = K.variable(initialization_seed((self.hidden_shape//2, self.hidden_shape//2)))
+        self.vt = K.variable(initialization_seed((self.hidden_shape//2, 1)))
+        # self.Wu = tf.convert_to_tensor(initialization_seed((self.hidden_shape, self.hidden_shape//2)), dtype=tf.float32)
+        # self.Wv = tf.convert_to_tensor(initialization_seed((self.hidden_shape, self.hidden_shape//2)), dtype=tf.float32)
+        # self.Vr = tf.convert_to_tensor(initialization_seed((self.hidden_shape//2, self.hidden_shape//2)), dtype=tf.float32)
+        # self.vt = tf.convert_to_tensor(initialization_seed((self.hidden_shape//2, 1)), dtype=tf.float32)
+        # self.trainable_weights += [self.Wu, self.Wv, self.Vr, self.vt]
 
     def call(self, inputs, mask=None):
         uQ = inputs
