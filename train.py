@@ -7,7 +7,7 @@ from keras.callbacks import History, ModelCheckpoint, EarlyStopping
 
 TRAIN_DIR = "data/train.json"
 TEST_DIR = "data/test.json"
-GLOVE_DIR = "glove/glove.6B.399d.txt"
+GLOVE_DIR = "glove/glove.6B.300d.txt"
 FILTER = ''' !"#$%&()*+,-./:;<=>?@[]^_{|}~\ '''
 WEIGHTS_FILEPATH = "model.hdf5"
 
