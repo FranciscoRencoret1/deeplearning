@@ -1,5 +1,5 @@
 from keras.models import Model
-from keras.layers import Input, Dense, Dropout, Concatenate, Flatten, Lambda, Activation, CuDNNGRU
+from keras.layers import Input, Dense, Dropout, Concatenate, Flatten, Lambda, Activation, CuDNNGRU, GRU
 from keras.layers.wrappers import Bidirectional, TimeDistributed
 from keras.regularizers import l2
 import keras.backend as K
