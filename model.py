@@ -8,26 +8,51 @@ from keras import optimizers, initializers
 from keras.engine import InputSpec
 from keras.activations import tanh, softmax
 import tensorflow as tf
+BATCH_SIZE= 128
+
 
 class PointerGRU(GRU):
     def __init__(self, hidden_shape, *args, **kwargs):
+        kwargs['implementation'] = kwargs.get('implementation', 2)
         self.hidden_shape = hidden_shape
         self.input_length = []
         print(111)
         super().__init__(*args, **kwargs)
         print(2222)
+
+    def compute_output_shape(self, input_shape):
+        input_shape = input_shape[0]
+        B, Q, H = input_shape
+        return (B, H)
+    
     def build(self, input_shape):
-        print(3333)
         super().build(input_shape[0])
+        print(3333)
         print("INPUT SHAPE {}".format(input_shape))
         self.input_spec = [InputSpec(shape=input_shape)]
         initialization_seed = initializers.get('orthogonal')
-        self.W1 = initialization_seed((256, 1))
-        self.W2 = initialization_seed((256, 1))
-        self.vt = initialization_seed((input_shape[1], 1))
-        self.trainable_weights += [self.W1, self.W2, self.vt]
+        # self.W1 = self.add_weight(name='W1',
+        #                           shape=(BATCH_SIZE, 256, 1),
+        #                           initializer=initialization_seed,
+        #                           trainable=True)
+        # self.W2 = self.add_weight(name='W2',
+        #                           shape=(BATCH_SIZE, 256, 1),
+        #                           initializer=initialization_seed,
+        #                           trainable=True)
+        # self.vt = self.add_weight(name='vt',
+        #                           shape=(BATCH_SIZE, input_shape[0][1], 1),
+        #                           initializer=initialization_seed,
+        #                           trainable=True)
+        self.W1 = tf.convert_to_tensor(initialization_seed((256, 1)), dtype=tf.float32)
+        self.W2 = tf.convert_to_tensor(initialization_seed((256, 1)), dtype=tf.float32)
+        self.vt = tf.convert_to_tensor(initialization_seed((input_shape[0][1], 1)), dtype=tf.float32)
+        self.trainable_weights.append(self.W1)
+        self.trainable_weights.append(self.W2)
+        self.trainable_weights.append(self.vt)
+        print(self.trainable_weights)
 
     def call(self, x, mask=None):
+        x = x[0]
         print(44444)
         input_shape = self.input_spec[0].shape
         en_seq = x
@@ -72,6 +97,12 @@ class QuestionPooling(Layer):
     def __init__(self, hidden_shape, **kwargs):
         super(QuestionPooling, self).__init__(**kwargs)
         self.hidden_shape = hidden_shape
+
+    def compute_output_shape(self, input_shape):
+        print("input shape: {}".format(input_shape))
+        B, Q, H = input_shape
+        
+        return (B, H)
 
     def build(self, input_shape):
         initialization_seed = initializers.get('orthogonal')
@@ -143,10 +174,11 @@ def generate_model(maxContextLen, maxQuestionLen):
 
     #QuestionPool
     rQ = QuestionPooling(256)(dropoutQuestion2)
+    print(rQ)
 
     # Pointer Networks Layer
     print("Dimentions: {}".format(bidirectionalQAwarePassage.get_shape()))
-    pointerLayer = PointerGRU(256, output_dim=maxContextLen, name='PointerLayer', return_sequences=True)([bidirectionalQAwarePassage, rQ])
+    pointerLayer = PointerGRU(maxContextLen, output_dim=256, name='PointerLayer', return_sequences=True)(bidirectionalQAwarePassage, initial_state =[rQ])
 
   
     fc1 = Dense(500, activation='relu', kernel_regularizer = l2(0.025))(bidirectionalQAwarePassage)
