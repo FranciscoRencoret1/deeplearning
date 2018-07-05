@@ -33,9 +33,12 @@ print("Max Question Length: {}".format(maxQuestionLen))
 print("Max Context Length: {}".format(maxContextLen))
 
 print("test data len {}".format(len(test_data)))
+print("gen_test {}".format(gen_test[0].shape))
+
+
 
 model = model.generate_model(maxContextLen, maxQuestionLen)
-model.fit_generator(gen_train, steps_per_epoch = len(list(gen_train)), epochs = 10, callbacks=callbacks_list, validation_data = gen_test, validation_steps = len(list(gen_test)))
+model.fit_generator(gen_train, steps_per_epoch = Xq.shape[0]//128, epochs = 10, callbacks=callbacks_list, validation_data = gen_test, validation_steps = Xct.shape[0]//128)
 model.save_weights(WEIGHTS_FILEPATH)
 with open('history.pickle', 'wb') as handle:
     pickle.dump(a, handle, protocol=pickle.HIGHEST_PROTOCOL)
