@@ -126,7 +126,7 @@ class QuestionPooling(Layer):
 
         s_hat1 = K.dot(uQ, self.Wu)
         s_hat2 = K.dot(ones, K.dot(self.Wv, self.Vr))
-        s_hat = K.tanh(Add()([shat1, shat2]))
+        s_hat = K.tanh(Add()([s_hat1, s_hat2]))
         s = K.dot(s_hat, self.vt)
         s = K.batch_flatten(s)
 
