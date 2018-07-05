@@ -4,6 +4,7 @@ import textGen
 import json
 import pickle
 from keras.callbacks import History, ModelCheckpoint, EarlyStopping
+import keras.backend as K
 
 TRAIN_DIR = "data/train.json"
 TEST_DIR = "data/test.json"
@@ -20,8 +21,8 @@ glove = preprocess.load_glove(GLOVE_DIR)
 Xc, Xq, Ys, Ye, mapper, maxContextLen, maxQuestionLen = preprocess.preprocess_data(train_data, glove, FILTER)
 Xct, Xqt, Yst, Yet, mappert, maxContextLent, maxQuestionLent = preprocess.preprocess_data(test_data, glove, FILTER)
 
-gen_train = textGen.generate_data(Xc, Xq, Ys, Ye, mapper, maxContextLen, maxQuestionLen, 256)
-gen_test = textGen.generate_data(Xct, Xqt, Yst, Yet, mappert, maxContextLen, maxQuestionLen, 256)
+gen_train = textGen.generate_data(Xc, Xq, Ys, Ye, mapper, maxContextLen, maxQuestionLen, 128)
+gen_test = textGen.generate_data(Xct, Xqt, Yst, Yet, mappert, maxContextLen, maxQuestionLen, 128)
 
 filepath="checkpoints/qa-weights-improvement-{epoch:02d}-{loss:.4f}.hdf5"
 checkpoint = ModelCheckpoint(filepath, monitor='loss', verbose=1, save_best_only=True, mode='min')
