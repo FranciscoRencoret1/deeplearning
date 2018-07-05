@@ -33,7 +33,7 @@ print("Max Question Length: {}".format(maxQuestionLen))
 print("Max Context Length: {}".format(maxContextLen))
 
 print("test data len {}".format(len(test_data)))
-print("gen_test {}".format(next(gen_test)[0].shape))
+print("gen_test {}".format(np.array(next(gen_test)[0]).shape))
 
 
 
