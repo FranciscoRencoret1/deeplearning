@@ -119,7 +119,7 @@ class QuestionPooling(Layer):
         # self.Wv = tf.convert_to_tensor(initialization_seed((self.hidden_shape, self.hidden_shape//2)), dtype=tf.float32)
         # self.Vr = tf.convert_to_tensor(initialization_seed((self.hidden_shape//2, self.hidden_shape//2)), dtype=tf.float32)
         # self.vt = tf.convert_to_tensor(initialization_seed((self.hidden_shape//2, 1)), dtype=tf.float32)
-        # self.trainable_weights += [self.Wu, self.Wv, self.Vr, self.vt]
+        self.trainable_weights += [self.Wu, self.Wv, self.Vr, self.vt]
 
     def call(self, inputs, mask=None):
         uQ = inputs
@@ -181,7 +181,7 @@ def generate_model(maxContextLen, maxQuestionLen):
     bidirectionalQAwarePassage = Bidirectional(CuDNNGRU(units=128, return_sequences=True))(attentionContextCoeficients)
 
     #QuestionPool
-    rQ = QuestionPooling(256)(dropoutQuestion2)
+    # rQ = QuestionPooling(256)(dropoutQuestion2)
 
     # Pointer Networks Layer
     # print("Dimentions: {}".format(bidirectionalQAwarePassage.get_shape()))
@@ -190,8 +190,9 @@ def generate_model(maxContextLen, maxQuestionLen):
 
     # Flatten
     flat = Flatten()(bidirectionalQAwarePassage)
+    flat2 = Flatten()(dropoutQuestion2)
 
-    preDense = Concatenate()([flat, rQ])
+    preDense = Concatenate()([flat, flat2])
     fc1 = Dense(500, activation='relu', kernel_regularizer = l2(0.05))(preDense)
     dropout = Dropout(0.5)(fc1)
     fc2 = Dense(1000, activation='relu', kernel_regularizer = l2(0.05))(dropout)
