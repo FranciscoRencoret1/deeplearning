@@ -21,8 +21,8 @@ def generate_data(Xp, Xq, Ys, Ye, mapper, maxContextLen, maxQuestionLen, batch_s
       if curr_index > len(Xq) - 1:
         count = 0
         curr_index = count
-      if maxPassageLen - len(Xp[mapper[curr_index]]) > 0:
-        xp_temp = np.concatenate((Xp[mapper[curr_index]], np.zeros((maxPassageLen - len(Xp[mapper[curr_index]]), 300))))
+      if maxContextLen - len(Xp[mapper[curr_index]]) > 0:
+        xp_temp = np.concatenate((Xp[mapper[curr_index]], np.zeros((maxContextLen - len(Xp[mapper[curr_index]]), 300))))
       else: 
         xp_temp = Xp[mapper[curr_index]]       
       if maxQuestionLen - len(Xq[curr_index]) > 0:                  
