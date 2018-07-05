@@ -13,10 +13,14 @@ BATCH_SIZE= 128
 
 class PointerGRU(GRU):
     def __init__(self, hidden_shape, *args, **kwargs):
-        kwargs['implementation'] = kwargs.get('implementation', 2)
+        # kwargs['implementation'] = kwargs.get('implementation', 2)
         self.hidden_shape = hidden_shape
         self.input_length = []
         print(111)
+        self.input_spec = [None] * 256 # TODO TODO TODO
+        for arg in (args):
+          print("arg: {}".format(arg))
+        print("pipi{}".format(kwargs))
         super().__init__(*args, **kwargs)
         print(2222)
 
@@ -26,10 +30,12 @@ class PointerGRU(GRU):
         return (B, H)
     
     def build(self, input_shape):
-        super().build(input_shape[0])
+        input_shape = input_shape[0]
         print(3333)
         print("INPUT SHAPE {}".format(input_shape))
         self.input_spec = [InputSpec(shape=input_shape)]
+        self.GRU_input_spec = self.input_spec
+        super().build(input_shape)
         initialization_seed = initializers.get('orthogonal')
         # self.W1 = self.add_weight(name='W1',
         #                           shape=(BATCH_SIZE, 256, 1),
@@ -45,15 +51,16 @@ class PointerGRU(GRU):
         #                           trainable=True)
         self.W1 = tf.convert_to_tensor(initialization_seed((256, 1)), dtype=tf.float32)
         self.W2 = tf.convert_to_tensor(initialization_seed((256, 1)), dtype=tf.float32)
-        self.vt = tf.convert_to_tensor(initialization_seed((input_shape[0][1], 1)), dtype=tf.float32)
+        print('asfadfad{}'.format(input_shape))
+        self.vt = tf.convert_to_tensor(initialization_seed((input_shape[1], 1)), dtype=tf.float32)
         self.trainable_weights.append(self.W1)
         self.trainable_weights.append(self.W2)
         self.trainable_weights.append(self.vt)
         print(self.trainable_weights)
 
     def call(self, x, mask=None):
-        x = x[0]
         print(44444)
+        x = x[0]
         input_shape = self.input_spec[0].shape
         en_seq = x
         x_input = x[:, input_shape[1]-1, :]
@@ -72,7 +79,6 @@ class PointerGRU(GRU):
         return outputs
 
     def step(self, x_input, states):
-        
         input_shape = self.input_spec[0].shape
         en_seq = states[-1]
         _, [h, c] = super().step(x_input, states[:-1])
@@ -178,7 +184,7 @@ def generate_model(maxContextLen, maxQuestionLen):
 
     # Pointer Networks Layer
     print("Dimentions: {}".format(bidirectionalQAwarePassage.get_shape()))
-    pointerLayer = PointerGRU(maxContextLen, output_dim=256, name='PointerLayer', return_sequences=True)(bidirectionalQAwarePassage, initial_state =[rQ])
+    pointerLayer = PointerGRU(maxContextLen, output_dim=256, name='PointerLayer', return_sequences=True)(inputs=[bidirectionalQAwarePassage], initial_state =[rQ])
 
   
     fc1 = Dense(500, activation='relu', kernel_regularizer = l2(0.025))(bidirectionalQAwarePassage)
