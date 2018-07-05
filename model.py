@@ -1,5 +1,5 @@
 from keras.models import Model
-from keras.layers import Input, Dense, Dropout, Concatenate, Flatten, Lambda, Activation, CuDNNGRU, GRU
+from keras.layers import Input, Dense, Dropout, Concatenate, Flatten, Lambda, Activation, CuDNNGRU, GRU,  Add
 from keras.layers.wrappers import Bidirectional, TimeDistributed
 from keras.regularizers import l2
 import keras.backend as K
@@ -105,7 +105,6 @@ class QuestionPooling(Layer):
         self.hidden_shape = hidden_shape
 
     def compute_output_shape(self, input_shape):
-        print("input shape: {}".format(input_shape))
         B, Q, H = input_shape
         
         return (B, H)
@@ -125,9 +124,9 @@ class QuestionPooling(Layer):
 
 
 
-        s_hat = K.dot(uQ, self.Wu)
-        s_hat += K.dot(ones, K.dot(self.Wv, self.Vr))
-        s_hat = K.tanh(s_hat)
+        s_hat1 = K.dot(uQ, self.Wu)
+        s_hat2 = K.dot(ones, K.dot(self.Wv, self.Vr))
+        s_hat = K.tanh(Add()([shat1, shat2]))
         s = K.dot(s_hat, self.vt)
         s = K.batch_flatten(s)
 
