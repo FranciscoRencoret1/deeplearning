@@ -11,6 +11,9 @@ GLOVE_DIR = "glove/glove.6B.300d.txt"
 FILTER = ''' !"#$%&()*+,-./:;<=>?@[]^_{|}~\ '''
 WEIGHTS_FILEPATH = "model.hdf5"
 
+# Check available GPU
+print(K.tensorflow_backend._get_available_gpus())
+
 train_data, test_data = preprocess.load_data(TRAIN_DIR, TEST_DIR)
 glove = preprocess.load_glove(GLOVE_DIR)
 
