@@ -23,7 +23,7 @@ gen_test = textGen.generate_data(Xc, Xq, Ys, Ye, m, maxContextLen, maxQuestionLe
 model = model.generate_model(maxContextLen, maxQuestionLen)
 model.load_weights('checkpoints/qa-weights-improvement-06-9.8426.hdf5')
 
-YsTest, YeTest = model.predict_generator(gen_test, steps=(Xq_test.shape[0] // 128))
+YsTest, YeTest = model.predict_generator(gen_test, steps=(Xc.shape[0] // 128))
 
 def transformYtoText(Ys, Ye):
   dic = {}
