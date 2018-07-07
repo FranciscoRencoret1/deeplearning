@@ -18,7 +18,7 @@ glove = preprocess.load_glove(GLOVE_DIR)
 a, b , c , d, m, maxContextLen, maxQuestionLen = preprocess.preprocess_data(train_data, glove, FILTER)
 Xc, Xq, Ys, Ye, mapper, maxContextLen, maxQuestionLen = preprocess.preprocess_data(test_data, glove, FILTER)
 
-gen_test = textGen.generate_data(Xc, Xq, Ys, Ye, mappert, maxContextLen, maxQuestionLen, 128)
+gen_test = textGen.generate_data(Xc, Xq, Ys, Ye, m, maxContextLen, maxQuestionLen, 128)
 
 model = model.generate_model(maxContextLen, maxQuestionLen)
 model.load_weights('checkpoints/qa-weights-improvement-06-9.8426.hdf5')
