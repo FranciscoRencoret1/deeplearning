@@ -16,7 +16,7 @@ train_data, test_data = preprocess.load_data(TRAIN_DIR, TEST_DIR)
 glove = preprocess.load_glove(GLOVE_DIR)
 
 a, b , c , d, m, maxContextLen, maxQuestionLen = preprocess.preprocess_data(train_data, glove, FILTER)
-Xc, Xq, Ys, Ye, mapper, maxContextLen, maxQuestionLen = preprocess.preprocess_data(test_data, glove, FILTER)
+Xc, Xq, Ys, Ye, mapper, maxContextLent, maxQuestionLent = preprocess.preprocess_data(test_data, glove, FILTER)
 
 gen_test = textGen.generate_data(Xc, Xq, Ys, Ye, m, maxContextLen, maxQuestionLen, 128)
 
