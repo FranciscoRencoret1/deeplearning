@@ -1,3 +1,4 @@
+from __future__ import print_function
 import json
 import numpy as np
 import keras.backend as K
@@ -43,7 +44,6 @@ def transformYtoText(Ys, Ye):
 pred = transformYtoText(YsTest, YeTest)
 
 """ Official evaluation script for v1.1 of the SQuAD dataset. """
-from __future__ import print_function
 from collections import Counter
 import string
 import re
