@@ -6,8 +6,6 @@ import json
 import numpy as np
 import keras.backend as K
 
-model = model.generate_model(maxContextLen, maxQuestionLen)
-model.load_weights('checkpoints/qa-weights-improvement-06-9.8426.hdf5')
 
 TRAIN_DIR = "data/train.json"
 TEST_DIR = "data/test.json"
@@ -21,6 +19,9 @@ a, b , c , d, m, maxContextLen, maxQuestionLen = preprocess.preprocess_data(trai
 Xc, Xq, Ys, Ye, mapper, maxContextLen, maxQuestionLen = preprocess.preprocess_data(test_data, glove, FILTER)
 
 gen_test = textGen.generate_data(Xc, Xq, Ys, Ye, mappert, maxContextLen, maxQuestionLen, 128)
+
+model = model.generate_model(maxContextLen, maxQuestionLen)
+model.load_weights('checkpoints/qa-weights-improvement-06-9.8426.hdf5')
 
 YsTest, YeTest = model.predict_generator(gen_test, steps=(Xq_test.shape[0] // 128))
 
