@@ -8,6 +8,7 @@ from keras import optimizers, initializers
 from keras.engine import InputSpec
 from keras.activations import tanh, softmax
 import tensorflow as tf
+from keras.utils import plot_model
 BATCH_SIZE= 128
 
 
@@ -208,4 +209,5 @@ def generate_model(maxContextLen, maxQuestionLen):
 
 if __name__ == '__main__':
   model = generate_model(400,100)
+  plot_model(model, to_file='model.png')
   print(model.summary())
